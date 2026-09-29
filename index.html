@@ -1,0 +1,158 @@
+<style>
+  .parallax-widget {
+    font-family: Arial, sans-serif;
+    max-width: 800px;
+    margin: 20px auto;
+    padding: 20px;
+    border: 2px solid #333;
+    border-radius: 8px;
+    background-color: #f4f4f4;
+    text-align: center;
+  }
+
+  .scene-container {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    background-color: #87CEEB; /* Sky blue */
+    border: 2px solid #555;
+    border-radius: 6px;
+    overflow: hidden;
+    margin-bottom: 20px;
+  }
+
+  /* All layers share these base styles for smooth positioning */
+  .scene-layer {
+    position: absolute;
+    top: 0;
+    left: -20%;
+    width: 140%; /* Extra width to allow panning without showing edges */
+    height: 100%;
+    pointer-events: none;
+    will-change: transform;
+  }
+
+  .controls-panel {
+    background: #fff;
+    padding: 15px;
+    border-radius: 6px;
+    border: 1px solid #ddd;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+  }
+
+  .toggle-group {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    font-size: 1.1rem;
+    font-weight: bold;
+    cursor: pointer;
+  }
+
+  .toggle-group input {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+  }
+
+  .slider-group {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .slider-group label {
+    font-size: 0.95rem;
+    color: #444;
+    font-weight: bold;
+  }
+
+  .range-slider {
+    width: 100%;
+    cursor: ew-resize;
+    height: 8px;
+  }
+
+  .status-text {
+    font-size: 0.95rem;
+    color: #1976d2;
+    font-weight: bold;
+    min-height: 20px;
+  }
+</style>
+
+<div class="parallax-widget">
+  <h2>Multiplane Camera & Parallax Depth</h2>
+  <p>Drag the slider to pan across the landscape. Toggle Multiplane Camera ON to see how differential speeds simulate 3D depth[cite: 6].</p>
+
+  <div class="scene-container" id="sceneContainer">
+    <!-- Layer 1: Background Mountains (Moves least when Multiplane is ON) -->
+    <img id="layerBg" class="scene-layer" src='data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="450"><path d="M0 300 L150 180 L300 280 L500 120 L750 290 L950 150 L1120 300 L1120 450 L0 450 Z" fill="%2390a4ae"/><path d="M200 320 L350 210 L500 310 L700 190 L900 320 L1120 320 L1120 450 L0 450 Z" fill="%23607d8b"/></svg>' alt="Mountains">
+
+    <!-- Layer 2: Midground Character & Hills (Moves moderately) -->
+    <img id="layerMid" class="scene-layer" src='data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="450"><path d="M0 360 Q 300 280 600 350 T 1120 340 L 1120 450 L 0 450 Z" fill="%234caf50"/><circle cx="560" cy="300" r="25" fill="%23ff9800"/><rect x="550" y="325" width="20" height="40" fill="%233f51b5"/></svg>' alt="Midground">
+
+    <!-- Layer 3: Foreground Trees & Foliage (Moves fastest when Multiplane is ON) -->
+    <img id="layerFg" class="scene-layer" src='data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="450"><circle cx="100" cy="400" r="60" fill="%231b5e20"/><rect x="90" y="420" width="20" height="30" fill="%23795548"/><circle cx="250" cy="380" r="80" fill="%232e7d32"/><rect x="238" y="410" width="24" height="40" fill="%23795548"/><circle cx="900" cy="390" r="70" fill="%231b5e20"/><rect x="890" y="420" width="20" height="30" fill="%23795548"/><circle cx="1020" cy="370" r="90" fill="%232e7d32"/><rect x="1006" y="410" width="28" height="40" fill="%23795548"/></svg>' alt="Foreground">
+  </div>
+
+  <div class="controls-panel">
+    <label class="toggle-group">
+      <input type="checkbox" id="multiplaneToggle">
+      <span>Multiplane Camera ON</span>
+    </label>
+
+    <div class="slider-group">
+      <label for="panSlider">Horizontal Pan Control</label>
+      <input type="range" id="panSlider" class="range-slider" min="0" max="100" value="50">
+    </div>
+
+    <div class="status-text" id="statusText">Mode: Flat Pan (Everything moves together as a single unit)</div>
+  </div>
+</div>
+
+<script>
+  const slider = document.getElementById('panSlider');
+  const toggle = document.getElementById('multiplaneToggle');
+  const statusText = document.getElementById('statusText');
+
+  const layerBg = document.getElementById('layerBg');
+  const layerMid = document.getElementById('layerMid');
+  const layerFg = document.getElementById('layerFg');
+
+  function updateScene() {
+    const val = slider.value - 50; // Ranges from -50 to +50
+
+    if (toggle.checked) {
+      // MULTIPLANE ON: True parallax depth effect
+      // Background moves very little, midground moves moderately, foreground moves fast
+      const bgTranslate = val * 0.15;
+      const midTranslate = val * 0.5;
+      const fgTranslate = val * 1.2;
+
+      layerBg.style.transform = `translateX(${bgTranslate}px)`;
+      layerMid.style.transform = `translateX(${midTranslate}px)`;
+      layerFg.style.transform = `translateX(${fgTranslate}px)`;
+
+      statusText.textContent = "Mode: Multiplane Parallax ON (Foreground trees move fast, character moves slowly, mountains barely move)";
+    } else {
+      // MULTIPLANE OFF: Flat cardboard cut-out pan (everything moves as one unit)[cite: 6]
+      const flatTranslate = val * 0.6;
+
+      layerBg.style.transform = `translateX(${flatTranslate}px)`;
+      layerMid.style.transform = `translateX(${flatTranslate}px)`;
+      layerFg.style.transform = `translateX(${flatTranslate}px)`;
+
+      statusText.textContent = "Mode: Flat Pan (The entire image pans flatly as a single unit)";
+    }
+  }
+
+  slider.addEventListener('input', updateScene);
+  toggle.addEventListener('change', updateScene);
+
+  // Run once on load to set initial state
+  updateScene();
+</script>
